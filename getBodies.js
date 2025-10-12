@@ -1,11 +1,16 @@
 import * as THREE from "three";
-import getRainbowMaterial from "./getRainbowMaterial.js";
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 const sceneMiddle = new THREE.Vector3(0, 0, 0);
-
+const gltfLoader = new GLTFLoader();
+const tetra = gltfLoader.loadAsync('./glb/tetra-wire.glb');
+let tGeo;
+tetra.then((g) => {
+  tGeo = g.scene.children[0].geometry;
+});
 function getBody(RAPIER, world) {
-  const size = 0.1 + Math.random() * 0.25;
+  const size = 0.4; // 0.1 + Math.random() * 0.25;
   const range = 6;
-  const density = size * 1.0;
+  const density = size * 0.5;
   let x = Math.random() * range - range * 0.5;
   let y = Math.random() * range - range * 0.5 + 3;
   let z = Math.random() * range - range * 0.5;
@@ -16,17 +21,17 @@ function getBody(RAPIER, world) {
   let colliderDesc = RAPIER.ColliderDesc.ball(size).setDensity(density);
   world.createCollider(colliderDesc, rigid);
 
-  const geometry = new THREE.IcosahedronGeometry(size, 8);
-  const material = getRainbowMaterial();
+  const geometry = tGeo;
+  const material = new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 0.8, transparent: true });
   const mesh = new THREE.Mesh(geometry, material);
-
+  mesh.scale.setScalar(size);
   const wireMat = new THREE.MeshBasicMaterial({
-    color: 0x990000,
+    color: 0xffffff,
     wireframe: true
   });
   const wireMesh = new THREE.Mesh(geometry, wireMat);
   wireMesh.scale.setScalar(1.001);
-  // mesh.add(wireMesh);
+  mesh.add(wireMesh);
 
   function update() {
     rigid.resetForces(true);
@@ -43,23 +48,24 @@ function getBody(RAPIER, world) {
 }
 
 function getMouseBall(RAPIER, world) {
-  const mouseSize = 0.25;
-  const geometry = new THREE.IcosahedronGeometry(mouseSize, 8);
-  const material = getRainbowMaterial();
-  const mouseLight = new THREE.PointLight(0xffffff, 1);
+  const mouseSize = 0.075;
+  const geometry = new THREE.IcosahedronGeometry(mouseSize, 4);
+  const material = new THREE.MeshBasicMaterial({});
+  // const mouseLight = new THREE.PointLight(0xffffff, 1);
   const mouseMesh = new THREE.Mesh(geometry, material);
-  mouseMesh.add(mouseLight);
+  // mouseMesh.add(mouseLight);
   // RIGID BODY
   let bodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(0, 0, 0)
   let mouseRigid = world.createRigidBody(bodyDesc);
-  let dynamicCollider = RAPIER.ColliderDesc.ball(mouseSize * 3.0);
+  let dynamicCollider = RAPIER.ColliderDesc.ball(mouseSize * 10.0);
   world.createCollider(dynamicCollider, mouseRigid);
-  function update(mousePos) {
-    mouseRigid.setTranslation({ x: mousePos.x * 5, y: mousePos.y * 5, z: 0.2 });
+  function update(pos) {
+    mouseRigid.setTranslation({ x: pos.x, y: pos.y, z: 0.2});
     let { x, y, z } = mouseRigid.translation();
     mouseMesh.position.set(x, y, z);
   }
-  return { mesh: mouseMesh, update };
+  mouseMesh.userData.update = update;
+  return mouseMesh;
 }
 
 export { getBody, getMouseBall };

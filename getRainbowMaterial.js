@@ -18,7 +18,7 @@ const hsl = Fn( ([ h, s, l ]) => {
 });
 
 function fragNode () {
-  const t = time.mul(0.2).fract();
+  const t = 0; // time.mul(0.2).fract();
   const p = positionLocal.x.add(0.3).sub(t);
   const hue = floor(p.mul(10)).mul(0.1);
   const sat = hue.mod(1).oneMinus().mul(0.5);
@@ -28,6 +28,7 @@ function fragNode () {
 
 
 const mat = new THREE.NodeMaterial();
+mat.wireframe = true;
 mat.fragmentNode = fragNode();
 
 function getRainbowMaterial() {

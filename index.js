@@ -1,27 +1,69 @@
 import * as THREE from "three";
 import { getBody, getMouseBall } from "./getBodies.js";
 import RAPIER from 'https://cdn.skypack.dev/@dimforge/rapier3d-compat';
+// Mediapipe
+import vision from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0";
+const { HandLandmarker, FilesetResolver } = vision;
 
 const w = window.innerWidth;
 const h = window.innerHeight;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x000000);
-const camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(75, w / h, 1, 1000);
 camera.position.z = 5;
 const renderer = new THREE.WebGPURenderer({ antialias: true });
-renderer.setAnimationLoop(animate);
+renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(w, h);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 document.body.appendChild(renderer.domElement);
 
-let mousePos = new THREE.Vector2();
+// Video Texture
+const video = document.createElement("video");
+const texture = new THREE.VideoTexture(video);
+texture.colorSpace = THREE.SRGBColorSpace;
+const geometry = new THREE.PlaneGeometry(1, 1);
+const material = new THREE.MeshBasicMaterial({
+  map: texture,
+  depthWrite: false,
+  side: THREE.DoubleSide,
+  // wireframe: true,
+});
+const videomesh = new THREE.Mesh(geometry, material);
+videomesh.rotation.y = Math.PI;
+scene.add(videomesh);
+
+// MediaPipe
+const filesetResolver = await FilesetResolver.forVisionTasks(
+  "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
+);
+const handLandmarker = await HandLandmarker.createFromOptions(filesetResolver, {
+  baseOptions: {
+    modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`,
+    delegate: "GPU",
+  },
+  runningMode: "VIDEO",
+  numHands: 2,
+});
+if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+  navigator.mediaDevices
+    .getUserMedia({ video: { facingMode: "user" } })
+    .then(function (stream) {
+      video.srcObject = stream;
+      video.play();
+    })
+    .catch(function (error) {
+      console.error("Unable to access the camera/webcam.", error);
+    });
+}
+
+let mousePos = new THREE.Vector3();
 
 await RAPIER.init();
 const gravity = { x: 0.0, y: 0, z: 0.0 };
 const world = new RAPIER.World(gravity);
 
-const numBodies = 100;
+const numBodies = 40;
 const bodies = [];
 for (let i = 0; i < numBodies; i++) {
   const body = getBody(RAPIER, world);
@@ -29,8 +71,13 @@ for (let i = 0; i < numBodies; i++) {
   scene.add(body.mesh);
 }
 
-const mouseBall = getMouseBall(RAPIER, world);
-scene.add(mouseBall.mesh);
+const stuffGroup = new THREE.Group();
+scene.add(stuffGroup);
+const numBalls = 21;
+for (let i = 0; i < numBalls; i++) {
+  const mesh = getMouseBall(RAPIER, world);
+  stuffGroup.add(mesh);
+}
 
 const hemiLight = new THREE.HemisphereLight(0x00bbff, 0xaa00ff);
 hemiLight.intensity = 0.2;
@@ -38,15 +85,39 @@ scene.add(hemiLight);
 
 
 function animate() {
-  world.step();
-  mouseBall.update(mousePos);
+
   bodies.forEach(b => b.update());
+  world.step();
   renderer.render(scene, camera);
-  // controls.update();
+  //
+  if (video.readyState >= HTMLMediaElement.HAVE_METADATA) {
+    const handResults = handLandmarker.detectForVideo(video, Date.now());
+    if (handResults.landmarks.length > 0) {
+      for (const landmarks of handResults.landmarks) {
+        landmarks.forEach((landmark, i) => {
+          const pos = {
+            x: (landmark.x * videomesh.scale.x - videomesh.scale.x * 0.5) * -1,
+            y: -landmark.y * videomesh.scale.y + videomesh.scale.y * 0.5,
+            z: landmark.z,
+          };
+          const mesh = stuffGroup.children[i];
+          mesh.userData.update(pos);
+        });
+      }
+    } else {
+      for (let i = 0; i < numBalls; i++) {
+        const mesh = stuffGroup.children[i];
+        mesh.position.set(0, 0, 10);
+      }
+    }
+  }
+
+  videomesh.scale.x = video.videoWidth * 0.01;
+  videomesh.scale.y = video.videoHeight * 0.01;
 }
+renderer.setAnimationLoop(animate);
 
-
-function handleWindowResize () {
+function handleWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -54,7 +125,7 @@ function handleWindowResize () {
 window.addEventListener('resize', handleWindowResize, false);
 
 // mouse move handler
-function handleMouseMove (evt) {
+function handleMouseMove(evt) {
   mousePos.x = (evt.clientX / window.innerWidth) * 2 - 1;
   mousePos.y = -(evt.clientY / window.innerHeight) * 2 + 1;
 }
