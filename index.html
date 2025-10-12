@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Physics with Three.js</title>
+    <title>THREE + Rapier + MediaPipe</title>
     <style>
       body {
         margin: 0;
@@ -11,13 +11,12 @@
     </style>
     <script type="importmap">
       {
-        "imports": {
-          "three": "https://cdn.jsdelivr.net/npm/three@v0.176.0/build/three.webgpu.js",
-          "three/webgpu": "https://cdn.jsdelivr.net/npm/three@v0.176.0/build/three.webgpu.js",
-          "three/tsl": "https://cdn.jsdelivr.net/npm/three@v0.176.0/build/three.tsl.js",
-          "three/addons/": "https://cdn.jsdelivr.net/npm/three@v0.176.0/examples/jsm/"
+				"imports": {
+					"three": "https://cdn.jsdelivr.net/npm/three@0.175/build/three.module.js",
+          "jsm/": "https://cdn.jsdelivr.net/npm/three@0.175/examples/jsm/",
+          "rapier": "https://cdn.skypack.dev/@dimforge/rapier3d-compat"
         }
-      }
+			}
     </script>
   </head>
   <body>

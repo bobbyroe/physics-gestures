@@ -1,16 +1,22 @@
 import * as THREE from "three";
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { GLTFLoader } from 'jsm/loaders/GLTFLoader.js';
+import { LineMaterial } from 'jsm/lines/LineMaterial.js';
+import { Wireframe } from 'jsm/lines/Wireframe.js';
+import { WireframeGeometry2 } from 'jsm/lines/WireframeGeometry2.js';
 const sceneMiddle = new THREE.Vector3(0, 0, 0);
 const gltfLoader = new GLTFLoader();
 const tetra = gltfLoader.loadAsync('./glb/tetra-wire.glb');
 let tGeo;
 tetra.then((g) => {
   tGeo = g.scene.children[0].geometry;
+  tGeo.scale(0.5, 0.5, 0.5);
 });
 function getBody(RAPIER, world) {
-  const size = 0.4; // 0.1 + Math.random() * 0.25;
+  const size = 1;
   const range = 6;
   const density = size * 0.5;
+  const geometry = tGeo;
+
   let x = Math.random() * range - range * 0.5;
   let y = Math.random() * range - range * 0.5 + 3;
   let z = Math.random() * range - range * 0.5;
@@ -18,20 +24,24 @@ function getBody(RAPIER, world) {
   let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic()
     .setTranslation(x, y, z);
   let rigid = world.createRigidBody(rigidBodyDesc);
-  let colliderDesc = RAPIER.ColliderDesc.ball(size).setDensity(density);
+  let points = geometry.attributes.position.array;
+  let colliderDesc = RAPIER.ColliderDesc.convexHull(points).setDensity(density);
   world.createCollider(colliderDesc, rigid);
 
-  const geometry = tGeo;
-  const material = new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 0.8, transparent: true });
+  const material = new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 0.9, transparent: true });
   const mesh = new THREE.Mesh(geometry, material);
   mesh.scale.setScalar(size);
-  const wireMat = new THREE.MeshBasicMaterial({
+
+  const wireMat = new LineMaterial({
     color: 0xffffff,
-    wireframe: true
+    linewidth: 5, // in pixels
   });
-  const wireMesh = new THREE.Mesh(geometry, wireMat);
-  wireMesh.scale.setScalar(1.001);
-  mesh.add(wireMesh);
+
+  const wireGeo = new WireframeGeometry2(geometry);
+  const wireframe = new Wireframe(wireGeo, wireMat);
+  wireframe.computeLineDistances();
+  wireframe.scale.set(1, 1, 1);
+  mesh.add(wireframe);
 
   function update() {
     rigid.resetForces(true);
@@ -60,7 +70,7 @@ function getMouseBall(RAPIER, world) {
   let dynamicCollider = RAPIER.ColliderDesc.ball(mouseSize * 10.0);
   world.createCollider(dynamicCollider, mouseRigid);
   function update(pos) {
-    mouseRigid.setTranslation({ x: pos.x, y: pos.y, z: 0.2});
+    mouseRigid.setTranslation({ x: pos.x, y: pos.y, z: 0.2 });
     let { x, y, z } = mouseRigid.translation();
     mouseMesh.position.set(x, y, z);
   }

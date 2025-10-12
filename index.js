@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { getBody, getMouseBall } from "./getBodies.js";
-import RAPIER from 'https://cdn.skypack.dev/@dimforge/rapier3d-compat';
+import RAPIER from 'rapier';
 // Mediapipe
 import vision from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0";
 const { HandLandmarker, FilesetResolver } = vision;
@@ -11,7 +11,7 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x000000);
 const camera = new THREE.PerspectiveCamera(75, w / h, 1, 1000);
 camera.position.z = 5;
-const renderer = new THREE.WebGPURenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(w, h);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -73,7 +73,7 @@ for (let i = 0; i < numBodies; i++) {
 
 const stuffGroup = new THREE.Group();
 scene.add(stuffGroup);
-const numBalls = 21;
+const numBalls = 42;
 for (let i = 0; i < numBalls; i++) {
   const mesh = getMouseBall(RAPIER, world);
   stuffGroup.add(mesh);
@@ -83,27 +83,44 @@ const hemiLight = new THREE.HemisphereLight(0x00bbff, 0xaa00ff);
 hemiLight.intensity = 0.2;
 scene.add(hemiLight);
 
+const pointsGeo = new THREE.BufferGeometry();
+const pointsMat = new THREE.PointsMaterial({
+  size: 0.05,
+  vertexColors: true
+});
+const points = new THREE.Points(pointsGeo, pointsMat);
+scene.add(points);
+
+function renderDebugView() {
+  const { vertices, colors } = world.debugRender();
+  pointsGeo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  pointsGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+}
 
 function animate() {
 
   bodies.forEach(b => b.update());
   world.step();
   renderer.render(scene, camera);
+  // renderDebugView();
   //
   if (video.readyState >= HTMLMediaElement.HAVE_METADATA) {
     const handResults = handLandmarker.detectForVideo(video, Date.now());
+
     if (handResults.landmarks.length > 0) {
-      for (const landmarks of handResults.landmarks) {
-        landmarks.forEach((landmark, i) => {
+      let index = 0;
+      handResults.landmarks.forEach((landmarks, i) => {
+        landmarks.forEach((landmark, j) => {
           const pos = {
             x: (landmark.x * videomesh.scale.x - videomesh.scale.x * 0.5) * -1,
             y: -landmark.y * videomesh.scale.y + videomesh.scale.y * 0.5,
             z: landmark.z,
           };
-          const mesh = stuffGroup.children[i];
+          const mesh = stuffGroup.children[index];
+          index += 1;
           mesh.userData.update(pos);
         });
-      }
+      });
     } else {
       for (let i = 0; i < numBalls; i++) {
         const mesh = stuffGroup.children[i];
