@@ -18,7 +18,7 @@ function getBody(RAPIER, world) {
   const geometry = tGeo;
 
   let x = Math.random() * range - range * 0.5;
-  let y = Math.random() * range - range * 0.5 + 3;
+  let y = Math.random() * range - range * 0.5;
   let z = Math.random() * range - range * 0.5;
   // physics
   let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic()
@@ -57,7 +57,7 @@ function getBody(RAPIER, world) {
   return { mesh, rigid, update };
 }
 
-function getMouseBall(RAPIER, world) {
+function getCollider(RAPIER, world) {
   const mouseSize = 0.075;
   const geometry = new THREE.IcosahedronGeometry(mouseSize, 4);
   const material = new THREE.MeshBasicMaterial({});
@@ -78,4 +78,4 @@ function getMouseBall(RAPIER, world) {
   return mouseMesh;
 }
 
-export { getBody, getMouseBall };
+export { getBody, getCollider };

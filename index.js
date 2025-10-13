@@ -1,10 +1,10 @@
 import * as THREE from "three";
-import { getBody, getMouseBall } from "./getBodies.js";
+import { getBody, getCollider } from "./getBodies.js";
 import RAPIER from 'rapier';
-// Mediapipe
-import vision from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0";
+import vision from "mediapipe";
 const { HandLandmarker, FilesetResolver } = vision;
 
+// init three.js scene
 const w = window.innerWidth;
 const h = window.innerHeight;
 const scene = new THREE.Scene();
@@ -27,23 +27,22 @@ const material = new THREE.MeshBasicMaterial({
   map: texture,
   depthWrite: false,
   side: THREE.DoubleSide,
-  // wireframe: true,
 });
 const videomesh = new THREE.Mesh(geometry, material);
 videomesh.rotation.y = Math.PI;
 scene.add(videomesh);
 
-// MediaPipe
-const filesetResolver = await FilesetResolver.forVisionTasks(
-  "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
-);
+// init MediaPipe
+const wasmPath = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm";
+const filesetResolver = await FilesetResolver.forVisionTasks(wasmPath);
+const modelAssetPath = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
 const handLandmarker = await HandLandmarker.createFromOptions(filesetResolver, {
   baseOptions: {
-    modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`,
+    modelAssetPath,
     delegate: "GPU",
   },
   runningMode: "VIDEO",
-  numHands: 2,
+  numHands: 1,
 });
 if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
   navigator.mediaDevices
@@ -53,17 +52,16 @@ if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       video.play();
     })
     .catch(function (error) {
-      console.error("Unable to access the camera/webcam.", error);
+      console.error("🛑 Unable to access the camera/webcam.", error);
     });
 }
 
-let mousePos = new THREE.Vector3();
-
+// physics
 await RAPIER.init();
 const gravity = { x: 0.0, y: 0, z: 0.0 };
 const world = new RAPIER.World(gravity);
 
-const numBodies = 40;
+const numBodies = 20;
 const bodies = [];
 for (let i = 0; i < numBodies; i++) {
   const body = getBody(RAPIER, world);
@@ -71,18 +69,16 @@ for (let i = 0; i < numBodies; i++) {
   scene.add(body.mesh);
 }
 
+// hand-tracking colliders
 const stuffGroup = new THREE.Group();
 scene.add(stuffGroup);
 const numBalls = 21;
 for (let i = 0; i < numBalls; i++) {
-  const mesh = getMouseBall(RAPIER, world);
+  const mesh = getCollider(RAPIER, world);
   stuffGroup.add(mesh);
 }
 
-const hemiLight = new THREE.HemisphereLight(0x00bbff, 0xaa00ff);
-hemiLight.intensity = 0.2;
-scene.add(hemiLight);
-
+// Rapier debug view
 const pointsGeo = new THREE.BufferGeometry();
 const pointsMat = new THREE.PointsMaterial({
   size: 0.05,
@@ -98,18 +94,17 @@ function renderDebugView() {
 }
 
 function animate() {
-
   bodies.forEach(b => b.update());
   world.step();
   renderer.render(scene, camera);
   // renderDebugView();
-  //
+
+  // computer vision / hand-tracking stuff
   if (video.readyState >= HTMLMediaElement.HAVE_METADATA) {
     const handResults = handLandmarker.detectForVideo(video, Date.now());
 
     if (handResults.landmarks.length > 0) {
-      let index = 0;
-      handResults.landmarks.forEach((landmarks, i) => {
+      handResults.landmarks.forEach((landmarks) => {
         landmarks.forEach((landmark, j) => {
           const pos = {
             x: (landmark.x * videomesh.scale.x - videomesh.scale.x * 0.5) * -1,
@@ -117,7 +112,6 @@ function animate() {
             z: landmark.z,
           };
           const mesh = stuffGroup.children[j];
-          index += 1;
           mesh.userData.update(pos);
         });
       });
@@ -128,7 +122,6 @@ function animate() {
       }
     }
   }
-
   videomesh.scale.x = video.videoWidth * 0.01;
   videomesh.scale.y = video.videoHeight * 0.01;
 }
@@ -140,11 +133,3 @@ function handleWindowResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 window.addEventListener('resize', handleWindowResize, false);
-
-// mouse move handler
-function handleMouseMove(evt) {
-  mousePos.x = (evt.clientX / window.innerWidth) * 2 - 1;
-  mousePos.y = -(evt.clientY / window.innerHeight) * 2 + 1;
-}
-window.addEventListener('mousemove', handleMouseMove, false);
-
