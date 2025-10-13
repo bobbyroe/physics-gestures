@@ -28,7 +28,7 @@ function getBody(RAPIER, world) {
   let colliderDesc = RAPIER.ColliderDesc.convexHull(points).setDensity(density);
   world.createCollider(colliderDesc, rigid);
 
-  const material = new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 0.9, transparent: true });
+  const material = new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 0.8, transparent: true });
   const mesh = new THREE.Mesh(geometry, material);
   mesh.scale.setScalar(size);
 

@@ -73,7 +73,7 @@ for (let i = 0; i < numBodies; i++) {
 
 const stuffGroup = new THREE.Group();
 scene.add(stuffGroup);
-const numBalls = 42;
+const numBalls = 21;
 for (let i = 0; i < numBalls; i++) {
   const mesh = getMouseBall(RAPIER, world);
   stuffGroup.add(mesh);
@@ -116,7 +116,7 @@ function animate() {
             y: -landmark.y * videomesh.scale.y + videomesh.scale.y * 0.5,
             z: landmark.z,
           };
-          const mesh = stuffGroup.children[index];
+          const mesh = stuffGroup.children[j];
           index += 1;
           mesh.userData.update(pos);
         });
