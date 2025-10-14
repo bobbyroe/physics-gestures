@@ -3,6 +3,7 @@ import { GLTFLoader } from 'jsm/loaders/GLTFLoader.js';
 import { LineMaterial } from 'jsm/lines/LineMaterial.js';
 import { Wireframe } from 'jsm/lines/Wireframe.js';
 import { WireframeGeometry2 } from 'jsm/lines/WireframeGeometry2.js';
+
 const sceneMiddle = new THREE.Vector3(0, 0, 0);
 const gltfLoader = new GLTFLoader();
 const tetra = gltfLoader.loadAsync('./glb/tetra-wire.glb');
@@ -61,9 +62,7 @@ function getCollider(RAPIER, world) {
   const mouseSize = 0.075;
   const geometry = new THREE.IcosahedronGeometry(mouseSize, 4);
   const material = new THREE.MeshBasicMaterial({});
-  // const mouseLight = new THREE.PointLight(0xffffff, 1);
   const mouseMesh = new THREE.Mesh(geometry, material);
-  // mouseMesh.add(mouseLight);
   // RIGID BODY
   let bodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(0, 0, 0)
   let mouseRigid = world.createRigidBody(bodyDesc);
