@@ -4,14 +4,15 @@ import { LineMaterial } from 'jsm/lines/LineMaterial.js';
 import { Wireframe } from 'jsm/lines/Wireframe.js';
 import { WireframeGeometry2 } from 'jsm/lines/WireframeGeometry2.js';
 
-const sceneMiddle = new THREE.Vector3(0, 0, 0);
+const sceneMiddle = new THREE.Vector3(2, 0, 0);
 const gltfLoader = new GLTFLoader();
 const tetra = gltfLoader.loadAsync('./glb/tetra-wire.glb');
 let tGeo;
 tetra.then((g) => {
   tGeo = g.scene.children[0].geometry;
-  tGeo.scale(0.5, 0.5, 0.5);
+  tGeo.scale(0.65, 0.65, 0.65);
 });
+
 function getBody(RAPIER, world) {
   const size = 1;
   const range = 6;
@@ -29,13 +30,13 @@ function getBody(RAPIER, world) {
   let colliderDesc = RAPIER.ColliderDesc.convexHull(points).setDensity(density);
   world.createCollider(colliderDesc, rigid);
 
-  const material = new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 0.8, transparent: true });
+  const material = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.85, transparent: true });
   const mesh = new THREE.Mesh(geometry, material);
   mesh.scale.setScalar(size);
 
   const wireMat = new LineMaterial({
-    color: 0xffffff,
-    linewidth: 5, // in pixels
+    color: 0x000000,
+    linewidth: 7, // in pixels
   });
 
   const wireGeo = new WireframeGeometry2(geometry);

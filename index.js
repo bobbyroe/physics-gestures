@@ -93,8 +93,8 @@ function animate() {
       }
     }
   }
-  videomesh.scale.x = video.videoWidth * 0.011;
-  videomesh.scale.y = video.videoHeight * 0.011;
+  videomesh.scale.x = video.videoWidth * 0.016;
+  videomesh.scale.y = video.videoHeight * 0.016;
 }
 renderer.setAnimationLoop(animate);
 
