@@ -3,7 +3,7 @@
 Let's walk step-by-step through webcam hand tracking + Rapier physics in the browser. You’ll wire up MediaPipe, organize modules and stitch it all together with clean JavaScript.
 If you’re into this, consider joining the channel as a member!
 
-Watch the project video on [YouTube](http://youtube.com/)
+Watch the project video on [YouTube](https://youtu.be/9Bzmgf5Gpr0)
 
 ![image](./gestures-shot.png)
 
